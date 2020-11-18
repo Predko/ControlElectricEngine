@@ -1,0 +1,8 @@
+{
+    "board": "arduino:avr:pro",
+    "configuration": "cpu=16MHzatmega168",
+    "sketch": "ACS712.ino\\ACS712.ino.ino",
+    "output": "build",
+    "port": "COM3",
+    "programmer": "AVRISP mkII"
+}

@@ -6,13 +6,15 @@ class ModifiedMovingAverage
 {
 public:
   // nm - число измерений
-  ModifiedMovingAverage(T nm);
+  ModifiedMovingAverage(int nm);
   
   // Устанавливает первое значение
   void SetFirstValue(T fv);
 
   // Вычисляет новое значение
   T CalcNew(T newValue);
+
+  inline T Get();
 
 private:
   // Последннее значение.

@@ -1,7 +1,7 @@
 #include "ModifiedMovingAverage.h"
 
 template <typename T>
-ModifiedMovingAverage<T>::ModifiedMovingAverage(T nm) 
+ModifiedMovingAverage<T>::ModifiedMovingAverage(int nm) 
 {  
   smoothingInterval = nm;
   
@@ -19,5 +19,11 @@ T ModifiedMovingAverage<T>::CalcNew(T newValue)
 {
   lastValue = (newValue + lastValue * (smoothingInterval - 1)) / smoothingInterval;  
   
+  return lastValue;
+}
+
+template <typename T>
+inline T ModifiedMovingAverage<T>::Get()
+{
   return lastValue;
 }

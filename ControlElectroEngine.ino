@@ -1,21 +1,73 @@
+/* 
+Copyright © 2020 Предко Виктор. All rights reserved.
+License GPLv3.
+Author: Предко Виктор.
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+  (Это свободная программа: вы можете перераспространять ее и/или изменять
+   ее на условиях Стандартной общественной лицензии GNU в том виде, в каком
+   она была опубликована Фондом свободного программного обеспечения; либо
+   версии 3 лицензии, либо (по вашему выбору) любой более поздней версии.
+
+   Эта программа распространяется в надежде, что она будет полезной,
+   но БЕЗО ВСЯКИХ ГАРАНТИЙ; даже без неявной гарантии ТОВАРНОГО ВИДА
+   или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ. Подробнее см. в Стандартной
+   общественной лицензии GNU.
+
+   Вы должны были получить копию Стандартной общественной лицензии GNU
+   вместе с этой программой. Если это не так, см.
+   <https://www.gnu.org/licenses/>.)
+
+*/
+
+
+// Размер прошивки:
+//
+// С отладочной информацией:
+// Скетч использует 8104 байт (25%) памяти устройства. Всего доступно 32256 байт.
+// Глобальные переменные используют 617 байт (30%) динамической памяти, оставляя 1431 байт для локальных переменных. Максимум: 2048 байт.
+//
+// Без поддержки LCD:
+// Скетч использует 6578 байт (20%) памяти устройства. Всего доступно 32256 байт.
+// Глобальные переменные используют 456 байт (22%) динамической памяти, оставляя 1592 байт для локальных переменных. Максимум: 2048 байт.
+//
+// Без serial отладочной информации:
+// Скетч использует 3386 байт (10%) памяти устройства. Всего доступно 32256 байт.
+// Глобальные переменные используют 139 байт (6%) динамической памяти, оставляя 1909 байт для локальных переменных. Максимум: 2048 байт.
+
 #include <Wire.h> 
-#include <LiquidCrystal_I2C.h>
+#include "ModifiedMovingAverage.h"
+
+// Отладочная информация на LCD дисплей.
+//#define LCD_DEBUG_ENABLE
+
+// Отладочная информация в COM порт.
+//#define SERIAL_DEBUG_ENABLE
+
+#include "serial_debug_info.h"
+#include "lcd_debug_info.h"
 
 // Analog input pin that sensor is attached to
 #define CURRENT_SENSOR A0
-#define START_RELAY    D2 // Реле нормально разомкнутое.
-#define ALARM_RELAY    D3 // Реле нормально замкнутое.
+#define START_RELAY    2 // Реле нормально разомкнутое.
+#define ALARM_RELAY    3 // Реле нормально замкнутое.
 
 // 66 mV / 1 A   - 30 A sensor
 // 100 mV / 1 A  - 20 A sensor
 // 185 mV / 1 A  - 5 A sensor
-#define K_Current 66
- 
-float amplitude_current;     //amplitude current
-float effective_value;       //effective current 
-
-// Время измерения тока(миллисекунд).
-const int8_t measurementTime = 100;
+const float K_Current = 66;
 
 // Ток, выше которого необходимо подключение пускового конденсатора.
 // Для двигателя мощностью 1.5 кВт, рабочий ток = 1500 / 220 около 7 А.
@@ -23,26 +75,45 @@ const int8_t measurementTime = 100;
 const int operatingCurrent = 8;  // (A)
 
 // Предварительно подсчитанный коэффициент для расчётной формулы показаний сенсора.
-const int K0 = (K_Current * 1024 * 1.414) / 5000;
+const int K0 = (K_Current * 1024 * 1.414) / 5000.0;
 
 // Показание сенсора, выше которого следует включить пусковой конденсатор(1.5 рабочего тока).
-const int startSensorValue = 512 + (operatingCurrent + operatingCurrent / 2) * K0;
+const int startSensorValue = 512.0 + (operatingCurrent + operatingCurrent / 2) * K0;
+
+#if defined(SERIAL_DEBUG_ENABLE) || defined(LCD_DEBUG_ENABLE)
+
+  #define AMPLITUDE_CURRENT(sensor_value) (1.414 * ((sensor_value) - 512) / K0)
+  #define EFFECTIVE_CURRENT(sensor_value) (((sensor_value) - 512) / K0)
+
+#endif
 
 // Максимальное время работы пускового конденсатора в миллисекундах.
 const int maxStartTime = 3000;
 
-// Set the LCD address to 0x27 for a 16 chars and 2 line display
-LiquidCrystal_I2C lcd(0x27, 16, 2);
-
-//int J = 0;  // Число измерений в секунду
+ModifiedMovingAverage<int> averageValue(5);
 
 void setup()
 {
-  Serial.begin(9600); 
+  // Подготавливаем реле для работы системы.
+  digitalWrite(START_RELAY, HIGH);  // Пусковой конденсатор выключен.
+  digitalWrite(ALARM_RELAY, HIGH);  // Питание двигателя включено.
+
   pins_init();
-	
-	// initialize the LCD
-	lcd.init(); 
+
+  // Считываем первое значение датчика тока.
+  int sensorValue = getMaxValue();
+  averageValue.SetFirstValue(sensorValue);
+    
+  LCD_INIT;
+  LCD_DEBUG(0, 0, "amplitude I:", AMPLITUDE_CURRENT(sensorValue));
+  LCD_DEBUG(0, 1, "effective I:", EFFECTIVE_CURRENT(sensorValue));
+
+  SERIAL_BEGIN(9600);
+
+  SERIAL_DEBUG(AMPLITUDE_CURRENT(sensorValue));
+  SERIAL_DEBUG(EFFECTIVE_CURRENT(sensorValue));
+
+  ReadySound(500);  // Полсекундный сигнал неисправности.
 }
 
 void loop()
@@ -52,41 +123,64 @@ void loop()
   
     sensorValue = getMaxValue();
 
+    {
+      SERIAL_DEBUG(sensorValue);
+
+      LCD_DEBUG(0, 0, "amplitude I:", AMPLITUDE_CURRENT(sensorValue));
+      LCD_DEBUG(0, 1, "effective I:", EFFECTIVE_CURRENT(sensorValue));
+
+      SERIAL_DEBUG(AMPLITUDE_CURRENT(sensorValue));
+      SERIAL_DEBUG(AMPLITUDE_CURRENT(sensorValue));
+    }
+
     // Проверяем, не стало ли значение тока выше рабочего.
     if ( sensorValue > startSensorValue)
     {
       // запускаем двигатель
+      AlarmSound(1);
+
       if (StartEngine(maxStartTime) == false)
       {
         // неудачный старт: сигналим и выключаем двигатель на 10 секунд.
 
-        digitalWrite(ALARM_RELAY, HIGH);
+        digitalWrite(ALARM_RELAY, LOW);
 
-        // Здесь код для сигнализирования...
+        // Звуковой сигнал около 10 секунд.
 
-        delay(10000); // пауза 10 секунд
+        AlarmSound(2);  // Двухсекундный сигнал неисправности.
+
+        delay(2000);    // Двухсекундная пауза до перезапуска.
+
+        AlarmSound(2);  // Двухсекундный сигнал неисправности.
+
+        delay(2000);    // Двухсекундная пауза до перезапуска.
+
+        AlarmSound(2);  // Двухсекундный сигнал неисправности.
+
+        delay(2000);    // Двухсекундная пауза до перезапуска.
 
         // Повторно включаем двигатель.
-        digitalWrite(ALARM_RELAY, LOW);
+        digitalWrite(ALARM_RELAY, HIGH);
       }
     }
-
+    
     delay(1000); // проводим замеры каждую секунду
 }
 
-/// <summary>
-/// Режим запуска двигателя.
-/// <param name = "startDuration">Продолжительность старта(миллисек.)
-/// (продолжительность включения пускового конденсатора)
-/// </param>
-/// <returns>true - если запуск удачен, иначе false</returns>
-/// </summary>
+// Режим запуска двигателя.
+// <param name = "startDuration">Продолжительность старта(миллисек.)
+// (продолжительность включения пускового конденсатора)
+// </param>
+// <returns>true - если запуск удачен, иначе false</returns>
 bool StartEngine(int startDuration)
 {
   // Включаем пусковой конденсатор.
-  digitalWrite(START_RELAY, HIGH);
+  digitalWrite(START_RELAY, LOW);
 
   uint32_t start_time = millis();
+
+  SERIAL_DEBUGSTR("Start engine");
+  SERIAL_DEBUG(start_time);
   
   do
   {
@@ -97,19 +191,29 @@ bool StartEngine(int startDuration)
     if ( sensorValue < startSensorValue)
     {
       // Выключаем пусковой конденсатор.
-      digitalWrite(START_RELAY, LOW);
+      digitalWrite(START_RELAY, HIGH);
 
+      SERIAL_DEBUGSTR(millis());
+      SERIAL_DEBUGSTR("Start Ok");
       // выходим из режима старта
       return true;
     }
   }
   while((millis() - start_time) < startDuration);
   
+  // Выключаем пусковой конденсатор.
+  digitalWrite(START_RELAY, HIGH);
+
+  SERIAL_DEBUGSTR(millis());
+  SERIAL_DEBUGSTR("Start failed");
   return false;  
 }
 
+// Время измерения тока(миллисекунд).
+const int8_t measurementTime = 100;
 
 // Функция возвращает максимальное значение показаний сенсора за время measurementTime
+// Используется Экспоненциальное скользящее среднее произвольного порядка для сглаживания шума. 
 int getMaxValue()
 {
     int sensorValue;             //value read from the sensor
@@ -117,30 +221,16 @@ int getMaxValue()
     
     uint32_t start_time = millis();
 
-//    J = 0;
-    
     while((millis()-start_time) < measurementTime)
     {
-        sensorValue = 0;
-        
-        for (int i = 10; i > 0; i--)
-        {
-          sensorValue += analogRead(CURRENT_SENSOR);
-        }
-
-        sensorValue /= 10;   // Среднее значение за 5 измерений
+        sensorValue = averageValue.CalcNew(analogRead(CURRENT_SENSOR));
         
         if (sensorValue > sensorMax) 
         {
           /*record the maximum sensor value*/
           sensorMax = sensorValue;
         }
-
-//        J++;
     }
-    
-//    Serial.print("Число измерений за 1 секунду = ");
-//    Serial.println(J);
         
     return sensorMax;
 }
@@ -151,4 +241,4 @@ void pins_init()
 
     pinMode(START_RELAY, OUTPUT);
     pinMode(ALARM_RELAY, OUTPUT);
-} 
+}

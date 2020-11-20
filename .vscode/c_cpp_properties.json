@@ -8,7 +8,8 @@
                 "d:/Program Files/Arduino/libraries/**",
                 "d:/Program Files/Arduino/hardware/arduino/avr/libraries/**",
                 "d:\\Program Files\\Arduino\\hardware\\arduino\\avr\\**",
-                "d:\\Program Files\\Arduino\\tools\\**"
+                "d:\\Program Files\\Arduino\\tools\\**",
+                "${workspaceFolder}"
             ],
             "forcedInclude": [
                 "d:\\Program Files\\Arduino\\hardware\\arduino\\avr\\cores\\arduino\\Arduino.h"

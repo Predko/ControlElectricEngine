@@ -16,12 +16,9 @@
             "problemMatcher": [
                 "$gcc"
             ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "group": "build",
             "detail": "Generated task by Debugger"
-        }
+        },
     ],
     "version": "2.0.0"
 }

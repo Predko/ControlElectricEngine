@@ -1,9 +1,9 @@
-#include "ModifiedMovingAverage.h"
+#include <ModifiedMovingAverage.h>
 
 template <typename T>
-ModifiedMovingAverage<T>::ModifiedMovingAverage(int nm) 
+ModifiedMovingAverage<T>::ModifiedMovingAverage(unsigned nm) 
 {  
-  smoothingInterval = nm;
+  smoothingInterval = (nm == 0) ? 10 : nm;
   
   lastValue = 0;
 }

@@ -48,7 +48,7 @@ Author: Предко Виктор.
 // Глобальные переменные используют 139 байт (6%) динамической памяти, оставляя 1909 байт для локальных переменных. Максимум: 2048 байт.
 
 #include <Wire.h> 
-#include "ModifiedMovingAverage.h"
+#include <ModifiedMovingAverage.h>
 
 // Отладочная информация на LCD дисплей.
 //#define LCD_DEBUG_ENABLE
@@ -89,6 +89,8 @@ const int startSensorValue = 512.0 + (operatingCurrent + operatingCurrent / 2) *
 
 // Максимальное время работы пускового конденсатора в миллисекундах.
 const int maxStartTime = 3000;
+
+template class ModifiedMovingAverage<int>;
 
 ModifiedMovingAverage<int> averageValue(5);
 

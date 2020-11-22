@@ -1,12 +1,14 @@
-#ifndef MODIFIED_MOVING_AVERAGE_H
-#define MODIFIED_MOVING_AVERAGE_H
+#pragma once
+
+#incude <arduino.h>
+
 
 template <class T> 
 class ModifiedMovingAverage 
 {
 public:
   // nm - число измерений
-  ModifiedMovingAverage(int nm);
+  ModifiedMovingAverage(unsigned nm);
   
   // Устанавливает первое значение
   void SetFirstValue(T fv);
@@ -21,7 +23,5 @@ private:
   T lastValue;
 
   // Интервал измерений
-  T smoothingInterval;
+  unsigned smoothingInterval;
 };
-
-#endif

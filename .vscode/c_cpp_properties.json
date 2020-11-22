@@ -3,18 +3,19 @@
         {
             "name": "Win32",
             "includePath": [
-                "C:\\Users\\predk\\AppData\\Local\\Arduino15\\packages\\Optiboot\\hardware\\avr\\0.8.0\\**",
+                "C:/Users/predk/AppData/Local/Arduino15/packages/Optiboot/hardware/avr/0.8.0/**",
+                "C:/Users/predk/OneDrive/Документы/Arduino/libraries/**",
                 "d:/MyProgram/Arduino/libraries/**",
-                "d:/Program Files/Arduino/libraries/**",
-                "d:/Program Files/Arduino/hardware/arduino/avr/libraries/**",
-                "d:\\Program Files\\Arduino\\hardware\\arduino\\avr\\**",
-                "d:\\Program Files\\Arduino\\tools\\**",
+                "c:/Program Files/WindowsApps/ArduinoLLC.ArduinoIDE_1.8.42.0_x86__mdqgnx93n4wtt/libraries/**",
+                "c:/Program Files/WindowsApps/ArduinoLLC.ArduinoIDE_1.8.42.0_x86__mdqgnx93n4wtt/hardware/arduino/avr/libraries/**",
+                "c:/Program Files/WindowsApps/ArduinoLLC.ArduinoIDE_1.8.42.0_x86__mdqgnx93n4wtt/hardware/arduino/avr/**",
+                "c:/Program Files/WindowsApps/ArduinoLLC.ArduinoIDE_1.8.42.0_x86__mdqgnx93n4wtt/tools/**",
                 "${workspaceFolder}"
             ],
             "forcedInclude": [
-                "d:\\Program Files\\Arduino\\hardware\\arduino\\avr\\cores\\arduino\\Arduino.h"
+                "d:/Program Files/Arduino/hardware/arduino/avr/cores/arduino/Arduino.h"
             ],
-            "compilerPath": "\"D:/Program Files/Arduino/hardware/tools/avr/bin/avr-gcc.exe\"",
+            "compilerPath": "\"c:/Program Files/WindowsApps/ArduinoLLC.ArduinoIDE_1.8.42.0_x86__mdqgnx93n4wtt/hardware/tools/avr/bin/avr-gcc.exe\"",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "gcc-x64",

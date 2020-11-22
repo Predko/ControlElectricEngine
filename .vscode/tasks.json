@@ -3,7 +3,7 @@
         {
             "type": "cppbuild",
             "label": "C/C++: avr-gcc.exe build active file",
-            "command": "D:/Program Files/Arduino/hardware/tools/avr/bin/avr-gcc.exe",
+            "command": "c:/Program Files/WindowsApps/ArduinoLLC.ArduinoIDE_1.8.42.0_x86__mdqgnx93n4wtt/hardware/tools/avr/bin/avr-gcc.exe",
             "args": [
                 "-g",
                 "${file}",
@@ -11,7 +11,7 @@
                 "${fileDirname}\\${fileBasenameNoExtension}.exe"
             ],
             "options": {
-                "cwd": "D:/Program Files/Arduino/hardware/tools/avr/bin"
+                "cwd": "c:/Program Files/WindowsApps/ArduinoLLC.ArduinoIDE_1.8.42.0_x86__mdqgnx93n4wtt/hardware/tools/avr/bin"
             },
             "problemMatcher": [
                 "$gcc"

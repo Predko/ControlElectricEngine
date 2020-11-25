@@ -60,19 +60,20 @@ Author: Предко Виктор.
 #include "lcd_debug_info.h"
 
 // Analog input pin that sensor is attached to
-#define CURRENT_SENSOR A0
-#define START_RELAY    2 // Реле нормально разомкнутое.
-#define ALARM_RELAY    3 // Реле нормально замкнутое.
+const uint8_t CURRENT_SENSOR {A0};
+
+const uint8_t START_RELAY {2};       // Реле нормально разомкнутое.
+const uint8_t ALARM_RELAY {3};       // Реле нормально замкнутое.
 
 // 66 mV / 1 A   - 30 A sensor
 // 100 mV / 1 A  - 20 A sensor
 // 185 mV / 1 A  - 5 A sensor
-const float K_Current = 66;
+const float K_Current {66};
 
 // Ток, выше которого необходимо подключение пускового конденсатора.
 // Для двигателя мощностью 1.5 кВт, рабочий ток = 1500 / 220 около 7 А.
 // Немного увеличиваем это значение.
-const int operatingCurrent = 8;  // (A)
+const int operatingCurrent {8};  // (A)
 
 // Предварительно подсчитанный коэффициент для расчётной формулы показаний сенсора.
 const int K0 = (K_Current * 1024 * 1.414) / 5000.0;
@@ -88,7 +89,7 @@ const int startSensorValue = 512.0 + (operatingCurrent + operatingCurrent / 2) *
 #endif
 
 // Максимальное время работы пускового конденсатора в миллисекундах.
-const int maxStartTime = 3000;
+const int maxStartTime {3000};
 
 template class ModifiedMovingAverage<int>;
 
@@ -96,36 +97,37 @@ ModifiedMovingAverage<int> averageValue(5);
 
 void setup()
 {
+  pins_init();
+
   // Подготавливаем реле для работы системы.
   digitalWrite(START_RELAY, HIGH);  // Пусковой конденсатор выключен.
   digitalWrite(ALARM_RELAY, HIGH);  // Питание двигателя включено.
 
-  pins_init();
-
   // Считываем первое значение датчика тока.
-  int sensorValue = getMaxValue();
+  int sensorValue = getMaxCurrentSensorValue();
+  
   averageValue.SetFirstValue(sensorValue);
     
-  LCD_INIT;
-  LCD_DEBUG(0, 0, "amplitude I:", AMPLITUDE_CURRENT(sensorValue));
-  LCD_DEBUG(0, 1, "effective I:", EFFECTIVE_CURRENT(sensorValue));
+  { // Debug section
+    LCD_INIT;
+    LCD_DEBUG(0, 0, "amplitude I:", AMPLITUDE_CURRENT(sensorValue));
+    LCD_DEBUG(0, 1, "effective I:", EFFECTIVE_CURRENT(sensorValue));
 
-  SERIAL_BEGIN(9600);
+    SERIAL_BEGIN(9600);
 
-  SERIAL_DEBUG(AMPLITUDE_CURRENT(sensorValue));
-  SERIAL_DEBUG(EFFECTIVE_CURRENT(sensorValue));
+    SERIAL_DEBUG(AMPLITUDE_CURRENT(sensorValue));
+    SERIAL_DEBUG(EFFECTIVE_CURRENT(sensorValue));
+  }
 
-  ReadySound(500);  // Полсекундный сигнал неисправности.
+  ReadySound(500);  // Полсекундный сигнал готовности.
 }
 
 void loop()
 {
   // текущее значение сенсора тока
-  int sensorValue;
-  
-    sensorValue = getMaxValue();
+  int sensorValue = getMaxCurrentSensorValue();
 
-    {
+    { // Debug section
       SERIAL_DEBUG(sensorValue);
 
       LCD_DEBUG(0, 0, "amplitude I:", AMPLITUDE_CURRENT(sensorValue));
@@ -147,19 +149,17 @@ void loop()
 
         digitalWrite(ALARM_RELAY, LOW);
 
-        // Звуковой сигнал около 10 секунд.
+        {// Звуковой сигнал около 10 секунд.
+          AlarmSound(2);  // Двухсекундный сигнал неисправности.
 
-        AlarmSound(2);  // Двухсекундный сигнал неисправности.
+          delay(2000);    // Двухсекундная пауза до перезапуска.
 
-        delay(2000);    // Двухсекундная пауза до перезапуска.
+          AlarmSound(2);  // Двухсекундный сигнал неисправности.
 
-        AlarmSound(2);  // Двухсекундный сигнал неисправности.
+          delay(2000);    // Двухсекундная пауза до перезапуска.
 
-        delay(2000);    // Двухсекундная пауза до перезапуска.
-
-        AlarmSound(2);  // Двухсекундный сигнал неисправности.
-
-        delay(2000);    // Двухсекундная пауза до перезапуска.
+          AlarmSound(2);  // Двухсекундный сигнал неисправности.
+        }
 
         // Повторно включаем двигатель.
         digitalWrite(ALARM_RELAY, HIGH);
@@ -170,10 +170,9 @@ void loop()
 }
 
 // Режим запуска двигателя.
-// <param name = "startDuration">Продолжительность старта(миллисек.)
+// "startDuration" - Продолжительность старта(миллисек.)
 // (продолжительность включения пускового конденсатора)
-// </param>
-// <returns>true - если запуск удачен, иначе false</returns>
+// Return: true - если запуск удачен, иначе false
 bool StartEngine(int startDuration)
 {
   // Включаем пусковой конденсатор.
@@ -181,13 +180,15 @@ bool StartEngine(int startDuration)
 
   uint32_t start_time = millis();
 
-  SERIAL_DEBUGSTR("Start engine");
-  SERIAL_DEBUG(start_time);
-  
+  { // Debug section
+    SERIAL_DEBUGSTR("Start engine");
+    SERIAL_DEBUG(start_time);
+  }
+
   do
   {
     // Получаем текущее значение сенсора тока.
-    int sensorValue = getMaxValue();
+    int sensorValue = getMaxCurrentSensorValue();
 
     // Проверяем, не уменьшилось ли значение тока до рабочего.
     if ( sensorValue < startSensorValue)
@@ -195,8 +196,11 @@ bool StartEngine(int startDuration)
       // Выключаем пусковой конденсатор.
       digitalWrite(START_RELAY, HIGH);
 
-      SERIAL_DEBUGSTR(millis());
-      SERIAL_DEBUGSTR("Start Ok");
+      { // Debug section  
+        SERIAL_DEBUGSTR(millis());
+        SERIAL_DEBUGSTR("Start Ok");
+      }      
+
       // выходим из режима старта
       return true;
     }
@@ -206,20 +210,23 @@ bool StartEngine(int startDuration)
   // Выключаем пусковой конденсатор.
   digitalWrite(START_RELAY, HIGH);
 
-  SERIAL_DEBUGSTR(millis());
-  SERIAL_DEBUGSTR("Start failed");
+  { // Debug section
+    SERIAL_DEBUGSTR(millis());
+    SERIAL_DEBUGSTR("Start failed");
+  }
+
   return false;  
 }
 
 // Время измерения тока(миллисекунд).
-const int8_t measurementTime = 100;
+const int8_t measurementTime { 100};
 
 // Функция возвращает максимальное значение показаний сенсора за время measurementTime
 // Используется Экспоненциальное скользящее среднее произвольного порядка для сглаживания шума. 
-int getMaxValue()
+int getMaxCurrentSensorValue()
 {
-    int sensorValue;             //value read from the sensor
-    int sensorMax = 0;
+    int sensorValue {0};             //value read from the sensor
+    int sensorMax {0};
     
     uint32_t start_time = millis();
 
@@ -237,6 +244,7 @@ int getMaxValue()
     return sensorMax;
 }
 
+// Настраивает пины ввода вывода
 void pins_init()
 {
     pinMode(CURRENT_SENSOR, INPUT);

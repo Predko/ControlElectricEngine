@@ -1,4 +1,4 @@
-# ControlElectroEngine
+# ControlElectricEngine
 
 Прошивка для Arduino Pro Mini.
 Предназначена для управления запуском трёхфазного ассинхронного двигателя, подключённого к двухфазной сети.
